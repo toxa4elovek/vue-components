@@ -1,0 +1,162 @@
+<template>
+    <div class="training">
+        <h1>Math training: Level #{{level + 1}}</h1>
+        <hr>
+
+        <div class="progress">
+            <div class="progress-bar" :style="progressStyles"></div>
+        </div>
+
+        <div class="box">
+            <transition name="flip" mode="out-in">
+                <app-start-screen v-if="state == 'start'" @onStart="onStart()"></app-start-screen>
+                <app-question v-else-if="state == 'question'"
+                              @success="onQuestionSuccess"
+                              @error="onQuestionError"
+                              :settings="levels[level]"
+                >
+                </app-question>
+                <app-message v-else-if="state == 'message'"
+                :type="message.type" :text="message.text"
+                             @onNext="onNext"
+                >
+                </app-message>
+                <app-result-screen v-else-if="state == 'result'" :level="level" :stats="stats" :levelCount="levels.length - 1"
+                    @repeat="onStart()" @nextLevel="nextLevel" @prevLevel="prevLevel"
+                ></app-result-screen>
+                <div  v-else> Unknown state </div>
+            </transition>
+        </div>
+
+    </div>
+</template>
+
+<script>
+    export default {
+        name: 'app',
+        data () {
+            return {
+                state: 'start',
+                stats: {
+                    success: 0,
+                    error: 0
+                },
+                message: {
+                    type: '',
+                    text: ''
+                },
+                questionCount: 3,
+                level: 0,
+                levels: [
+                    {
+                        from: 10,
+                        to: 40,
+                        variants: 2,
+                        range: 5
+                    },
+                    {
+                        from: 100,
+                        to: 200,
+                        range: 4,
+                        variants: 4
+                    },
+                    {
+                        from: 500,
+                        to: 900,
+                        variants: 6,
+                        range: 40
+                    }
+                ]
+            }
+        },
+        computed: {
+            done(){
+                return this.stats.success + this.stats.error;
+            },
+            progressStyles() {
+                return {
+                    width: (this.done / this.questionCount * 100) + '%',
+                }
+            }
+        },
+        methods: {
+            onStart(){
+                this.state = 'question';
+                this.stats.success = 0;
+                this.stats.error = 0;
+            },
+            onQuestionSuccess(){
+                this.state = 'message';
+                this.message.text = 'Good job';
+                this.message.type = 'success';
+                this.stats.success++;
+            },
+            onQuestionError(error){
+                this.state = 'message';
+                this.message.text = error;
+                this.message.type = 'warning';
+                this.stats.error++;
+            },
+            onNext() {
+                if (this.done < this.questionCount) {
+                    this.state = 'question';
+                } else {
+                    this.state = 'result';
+                }
+
+            },
+            nextLevel() {
+                let level = this.level + 1;
+
+                if (level < this.levels.length) {
+                    this.level++;
+                    this.onStart();
+                }
+            },
+            prevLevel() {
+                if (this.level > 0) {
+                    this.level--;
+                    this.onStart();
+                }
+
+            }
+        }
+    }
+</script>
+
+<style scoped>
+    .training {
+        max-width: 700px;
+        margin: 20px auto;
+    }
+
+    .box {
+        margin: 10px 0;
+    }
+
+    .flip-enter {
+
+    }
+    .flip-enter-active {
+        animation: flipInX 0.3s linear;
+    }
+    .flip-leave {
+
+    }
+    .flip-leave-active {
+        animation: flipOutX 0.3s linear;
+    }
+
+    .progress-bar {
+        transition: width 0.5s
+    }
+
+    @keyframes flipInX {
+        from{transform: rotateX(90deg)}
+        to{transform: rotateX(0deg)}
+    }
+    @keyframes flipOutX {
+        from{transform: rotateX(0deg)}
+        to{transform: rotateX(90deg)}
+    }
+</style>
